@@ -1,4 +1,4 @@
-## Praktikum Mobile
+# Praktikum Pemograman Mobile
 
 Nama : Yustinus Ergi Owen Sinaga<br>
 NIM : H1D024072<br>
