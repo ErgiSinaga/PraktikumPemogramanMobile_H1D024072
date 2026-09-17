@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.internal.enableLiveLiterals
 import androidx.compose.ui.Alignment
@@ -25,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ergi.jualan.ui.theme.JualanTheme
@@ -119,5 +123,32 @@ fun LayoutTentangJualan(modifier: Modifier = Modifier) {
 fun LayoutTentangJualanPreview() {
     JualanTheme {
         LayoutTentangJualan()
+    }
+}
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            JualanTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    val navController = rememberNavController()
+                    NavHost(navController = navController, startDestination = "basic_info") {
+                        composable(route = "basic_info") {
+                            BasicInfoScreen(
+                                onNavigateToContact = { navController.navigate(route = "form_screen") }
+                            )
+                        }
+                        composable(route = "form_screen") {
+                            HubungiKamiScreen(navController = navController)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
