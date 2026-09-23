@@ -13,4 +13,7 @@ Sceenshot tampilan Pertemuan 2 :
 <br><img width="1080" height="2400" alt="WhatsApp Image 2026-09-17 at 14 16 36 (1)" src="https://github.com/user-attachments/assets/fcdbe10b-d187-404f-9bb8-3f3ffe6c2465" /><br>
 
 Screen record tampilan Pertemuan 3 :
-https://github.com/user-attachments/assets/1aa6fd1d-c3b8-45b3-815d-47853464695b
+
+
+https://github.com/user-attachments/assets/032d2cc0-6d94-4ec7-88dc-a8651660e77e
+
