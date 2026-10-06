@@ -17,3 +17,8 @@ Screen record tampilan Pertemuan 3 :
 
 https://github.com/user-attachments/assets/032d2cc0-6d94-4ec7-88dc-a8651660e77e
 
+Screen record tampilan Pertemuan 4 :
+
+
+https://github.com/user-attachments/assets/a9cf2162-888e-4ba0-a8c8-5dceddd99a45
+
