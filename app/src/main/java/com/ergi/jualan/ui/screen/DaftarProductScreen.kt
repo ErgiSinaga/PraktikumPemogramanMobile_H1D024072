@@ -1,7 +1,5 @@
-package com.ergi.jualan.ui.screen
+﻿package com.ergi.jualan.ui.screen
 
-import android.content.res.Configuration
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,10 +13,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
@@ -39,7 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,60 +48,75 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.ergi.jualan.R
-import com.ergi.jualan.data.dummy.DummyData
 import com.ergi.jualan.data.model.Category
 import com.ergi.jualan.data.model.Product
-import kotlinx.coroutines.delay
+import com.ergi.jualan.ui.viewmodel.ProductUiState
+import com.ergi.jualan.ui.viewmodel.ProductViewModel
+import com.ergi.jualan.util.JualanConstants.BASE_URL
 
+// ===================== STATEFUL =====================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DaftarProdukScreen(navController: NavController? = null) {
-    var selectedCategoryId by rememberSaveable { mutableStateOf(DummyData.categories.firstOrNull()?.id) }
+fun DaftarProdukScreen(
+    navController: NavController? = null,
+    viewModel: ProductViewModel
+) {
+    var selectedCategoryId by rememberSaveable { mutableStateOf<Int?>(null) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
-    var filteredProducts by remember { mutableStateOf(emptyList<Product>()) }
+    val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(selectedCategoryId, searchQuery) {
-        isLoading = true
-        delay(1000)
-
-        val filteredByCategory = if (selectedCategoryId != null) {
-            DummyData.products.filter { it.category_id == selectedCategoryId }
-        } else DummyData.products
-
-        filteredProducts = if (searchQuery.isBlank()) {
-            filteredByCategory
-        } else {
-            filteredByCategory.filter { it.name.contains(searchQuery, ignoreCase = true) }
+    when (val state = uiState) {
+        is ProductUiState.Loading -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
         }
+        is ProductUiState.Error -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Error: ${state.message}", color = MaterialTheme.colorScheme.error)
+            }
+        }
+        is ProductUiState.Success -> {
+            val activeCategoryId = selectedCategoryId ?: state.categories.firstOrNull()?.id
 
-        isLoading = false
+            val filteredByCategory = if (activeCategoryId != null) {
+                state.products.filter { it.category_id == activeCategoryId }
+            } else {
+                state.products
+            }
+
+            val filteredProducts = if (searchQuery.isBlank()) {
+                filteredByCategory
+            } else {
+                filteredByCategory.filter { it.name.contains(searchQuery, ignoreCase = true) }
+            }
+
+            StatelessDaftarProduct(
+                categories = state.categories,
+                selectedCategoryId = activeCategoryId,
+                onCategorySelected = { selectedCategoryId = it },
+                searchQuery = searchQuery,
+                onSearchQueryChange = { searchQuery = it },
+                isLoading = false,
+                products = filteredProducts,
+                onProductClick = { product ->
+                    navController?.navigate("detail/${product.id}")
+                },
+                onContactUsClick = {
+                    navController?.navigate("hubungi_kami")
+                }
+            )
+        }
     }
-
-    StatelessDaftarProduct(
-        categories = DummyData.categories,
-        selectedCategoryId = selectedCategoryId,
-        onCategorySelected = { selectedCategoryId = it },
-        searchQuery = searchQuery,
-        onSearchQueryChange = { searchQuery = it },
-        isLoading = isLoading,
-        products = filteredProducts,
-        onProductClick = { product ->
-            navController?.navigate("detail/${product.id}")
-        },
-        onContactUsClick = {
-            navController?.navigate("hubungi_kami")
-        }
-    )
 }
 
+// ===================== STATELESS =====================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatelessDaftarProduct(
@@ -135,11 +148,7 @@ fun StatelessDaftarProduct(
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
-
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         DropdownMenuItem(
                             text = { Text("Hubungi Kami") },
                             onClick = {
@@ -147,10 +156,7 @@ fun StatelessDaftarProduct(
                                 onContactUsClick()
                             },
                             leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Email,
-                                    contentDescription = "Email"
-                                )
+                                Icon(imageVector = Icons.Default.Email, contentDescription = "Email")
                             }
                         )
                     }
@@ -226,9 +232,7 @@ fun StatelessDaftarProduct(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(products) { product ->
-                            ProductItemCard(product = product) {
-                                onProductClick(product)
-                            }
+                            ProductItemCard(product = product) { onProductClick(product) }
                         }
                     }
                 }
@@ -236,6 +240,8 @@ fun StatelessDaftarProduct(
         }
     }
 }
+
+// ===================== KOMPONEN =====================
 @Composable
 fun ProductItemCard(product: Product, onClick: () -> Unit) {
     Card(
@@ -247,17 +253,21 @@ fun ProductItemCard(product: Product, onClick: () -> Unit) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(all = 12.dp)) {
-            val imageRes = if (product.img == "dummy_product") R.drawable.dummy_product else R.drawable.dummy_product
+            val imageModel: Any = if (product.img == "dummy_product") {
+                R.drawable.dummy_product
+            } else {
+                "${BASE_URL}img/${product.img}"
+            }
 
             Box(modifier = Modifier.fillMaxWidth()) {
-                Image(
-                    painter = painterResource(id = imageRes),
+                AsyncImage(
+                    model = imageModel,
                     contentDescription = product.name,
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)
-                        .clip(shape = RoundedCornerShape(size = 8.dp))
-                        .background(color = Color.White),
+                        .clip(RoundedCornerShape(size = 8.dp))
+                        .background(Color.White),
                     contentScale = ContentScale.Fit
                 )
 
@@ -266,8 +276,8 @@ fun ProductItemCard(product: Product, onClick: () -> Unit) {
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(all = 4.dp)
-                            .clip(shape = RoundedCornerShape(size = 4.dp))
-                            .background(color = MaterialTheme.colorScheme.secondary)
+                            .clip(RoundedCornerShape(size = 4.dp))
+                            .background(MaterialTheme.colorScheme.secondary)
                     ) {
                         Text(
                             text = product.category.name,
@@ -280,7 +290,6 @@ fun ProductItemCard(product: Product, onClick: () -> Unit) {
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-
             Text(
                 text = product.name,
                 style = MaterialTheme.typography.titleMedium,
@@ -288,9 +297,7 @@ fun ProductItemCard(product: Product, onClick: () -> Unit) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-
             Spacer(modifier = Modifier.height(4.dp))
-
             Text(
                 text = "Rp ${product.price}",
                 style = MaterialTheme.typography.bodyMedium,
@@ -315,29 +322,4 @@ fun CategoryItem(category: Category, isSelected: Boolean, onClick: () -> Unit) {
             fontWeight = FontWeight.Medium
         )
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewProduct() {
-    if (DummyData.products.isNotEmpty()) {
-        ProductItemCard(product = DummyData.products[0], onClick = {})
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewCategory() {
-    if (DummyData.categories.isNotEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CategoryItem(category = DummyData.categories[0], isSelected = true, onClick = {})
-        }
-    }
-}
-
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_NO, name = "Light")
-@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, name = "Dark")
-@Composable
-fun PreviewDaftarProdukScreen() {
-    DaftarProdukScreen()
 }
